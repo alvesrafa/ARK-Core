@@ -1,0 +1,11 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+    level: 6
+    ignoreErrors:
+        - '#return type has no value type specified in iterable type array#'
+        - '#does not specify its types: T#'
+    excludePaths: []

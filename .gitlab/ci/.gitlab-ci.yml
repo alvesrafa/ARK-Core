@@ -1,0 +1,75 @@
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  MYSQL_ROOT_PASSWORD: password
+  MYSQL_DATABASE: testing
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: testing
+  DB_USERNAME: root
+  DB_PASSWORD: password
+
+.php-template:
+  image: php:8.4-cli
+  services:
+    - mysql:8.4
+  before_script:
+    - apt-get update && apt-get install -y git unzip libzip-dev
+    - docker-php-ext-install pdo_mysql zip
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - composer install --no-interaction --prefer-dist
+    - cp .env.example .env
+    - php artisan key:generate
+
+.node-template:
+  image: node:22
+  before_script:
+    - npm ci
+
+pint:
+  extends: .php-template
+  stage: lint
+  script:
+    - vendor/bin/pint --test
+
+phpstan:
+  extends: .php-template
+  stage: lint
+  script:
+    - vendor/bin/phpstan analyse --no-progress
+
+eslint:
+  extends: .node-template
+  stage: lint
+  script:
+    - npx eslint .
+
+typescript:
+  extends: .node-template
+  stage: lint
+  script:
+    - npx tsc --noEmit
+
+pest:
+  extends: .php-template
+  stage: test
+  script:
+    - vendor/bin/pest --parallel
+
+vitest:
+  extends: .node-template
+  stage: test
+  script:
+    - npm run test
+
+build:
+  extends: .node-template
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - public/build/
