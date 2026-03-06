@@ -34,7 +34,7 @@ export function Pagination<T>({ paginator, className }: PaginationProps<T>) {
                             href={link.url}
                             className={cn(
                                 'inline-flex h-9 items-center justify-center rounded-md px-3 text-sm transition-colors',
-                                link.active ? 'bg-gray-900 text-white' : 'hover:bg-gray-100',
+                                link.active ? 'bg-blue-assefaz text-white' : 'hover:bg-gray-100',
                             )}
                             preserveState
                             preserveScroll

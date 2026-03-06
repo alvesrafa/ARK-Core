@@ -9,4 +9,43 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Assefaz brand colors */
+    --color-blue-assefaz: #00599a;
+    --color-disabled-assefaz: #c9c9c9;
+    --color-black-assefaz: #111;
+    --color-description: #636363;
+    --color-assefaz-error-dark: #8f0000;
+
+    /* Status backgrounds */
+    --color-error-background: #ffcccc;
+    --color-success-background: #97ffc0;
+    --color-info-background: #75e1fe;
+
+    /* Charts */
+    --color-chart-border: #00166433;
+    --color-chart-1: #ffe2e2;
+    --color-chart-2: #effcef;
+    --color-chart-3: #e6f5f9;
+    --color-chart-4: #fff6e2;
+}
+
+@layer base {
+    :root {
+        --primary: var(--color-blue-assefaz);
+    }
+
+    /* Sidebar scrollbar */
+    aside::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    aside::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    aside::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+    }
 }

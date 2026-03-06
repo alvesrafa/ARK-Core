@@ -60,6 +60,24 @@ return [
             'report' => false,
         ],
 
+        'azure' => [
+            'driver' => 'azure',
+            'connection_string' => env('AZURE_STORAGE_CONNECTION_STRING'),
+            'container' => env('AZURE_STORAGE_CONTAINER', 'files'),
+            'prefix' => env('AZURE_STORAGE_PREFIX'),
+            'url' => env('AZURE_STORAGE_URL'),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'volume' => [
+            'driver' => 'local',
+            'root' => env('VOLUME_STORAGE_PATH', storage_path('app/files')),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

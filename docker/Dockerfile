@@ -5,6 +5,7 @@ FROM dunglas/frankenphp:1.11-builder-php8.4 AS base
 
 RUN install-php-extensions \
     pdo_mysql \
+    redis \
     zip \
     gd \
     bcmath \
