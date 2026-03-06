@@ -47,10 +47,3 @@ export interface IPageProps {
 export type IPaginatedPageProps<T> = IPageProps & {
     page: IPaginate<T>;
 };
-
-export interface Post extends IBaseModel {
-    title: string;
-    content: string;
-    status: string;
-    published_at: string | null;
-}

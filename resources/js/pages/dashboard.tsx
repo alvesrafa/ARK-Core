@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import AppLayout from '@/layouts/AppLayout';
 import { FileText, LayoutDashboard } from 'lucide-react';
+import AppLayout from './layouts/AppLayout';
 
 export default function Dashboard() {
     return (
@@ -28,7 +28,7 @@ export default function Dashboard() {
                             <LayoutDashboard className="h-4 w-4 text-gray-500" />
                         </CardHeader>
                         <CardContent>
-                            <CardDescription>Este é o template padrão Assefaz.</CardDescription>
+                            <CardDescription>Este é o template padrão ARK Core.</CardDescription>
                         </CardContent>
                     </Card>
                 </div>

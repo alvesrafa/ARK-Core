@@ -1,16 +1,23 @@
-FROM php:8.4-fpm AS base
+# ==============================================================================
+# Base stage — FrankenPHP with PHP 8.4
+# ==============================================================================
+FROM dunglas/frankenphp:1.11-builder-php8.4 AS base
 
-RUN apt-get update && apt-get install -y \
-    git curl zip unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql zip gd bcmath opcache \
-    && rm -rf /var/lib/apt/lists/*
+RUN install-php-extensions \
+    pdo_mysql \
+    zip \
+    gd \
+    bcmath \
+    opcache \
+    pcntl
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Build stage for frontend assets
+# ==============================================================================
+# Frontend assets build
+# ==============================================================================
 FROM node:22-slim AS frontend
 
 WORKDIR /app
@@ -19,7 +26,23 @@ RUN npm install
 COPY . .
 RUN npm run build
 
+# ==============================================================================
+# Development stage — used by Sail
+# ==============================================================================
+FROM base AS dev
+
+RUN install-php-extensions xdebug
+
+COPY . .
+RUN composer install --no-interaction
+
+EXPOSE 80 443
+
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8000"]
+
+# ==============================================================================
 # Production stage
+# ==============================================================================
 FROM base AS production
 
 COPY . .
@@ -31,6 +54,6 @@ RUN composer install --no-dev --no-interaction --optimize-autoloader \
     && php artisan view:cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-EXPOSE 9000
+EXPOSE 80 443
 
-CMD ["php-fpm"]
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8000"]
