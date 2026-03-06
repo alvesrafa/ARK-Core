@@ -1,7 +1,7 @@
 import { ToastProvider } from '@/contexts/ToastProvider';
 import type { SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { FileText, LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface AppLayoutProps {
@@ -26,14 +26,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
                         >
                             <LayoutDashboard className="h-4 w-4" />
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/posts"
-                            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
-                        >
-                            <FileText className="h-4 w-4" />
-                            Posts
+                            TESTE
                         </Link>
                     </nav>
                 </aside>
