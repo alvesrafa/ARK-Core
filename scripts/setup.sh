@@ -363,6 +363,17 @@ HEREDOC
 # -----------------------------------------------------------------------------
 # 4. Execution
 # -----------------------------------------------------------------------------
+run_composer_install() {
+    print_step "Installing PHP dependencies..."
+    cd "$PROJECT_DIR"
+    if command -v composer &>/dev/null; then
+        composer install --no-interaction --prefer-dist
+    else
+        print_error "Composer not found locally. Please install Composer first."
+        exit 1
+    fi
+    print_success "PHP dependencies installed."
+}
 run_docker_setup() {
     print_step "Building and starting containers..."
     cd "$PROJECT_DIR"
@@ -457,7 +468,7 @@ cleanup_project() {
 # -----------------------------------------------------------------------------
 print_summary() {
     local boost_status="not installed"
-    if  "$USE_BOOST" = "yes" ; then
+    if [ "$USE_BOOST" = "yes" ]; then
         boost_status="installed (configure MCP in your editor)"
     fi
     local redis_status="active"
@@ -503,6 +514,8 @@ main() {
     update_claude_md
     update_agents_md
     echo ""
+    # Dependencies before Docker actions
+    run_composer_install
     # Docker setup
     run_docker_setup
     # Boost MCP
