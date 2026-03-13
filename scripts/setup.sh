@@ -469,21 +469,21 @@ HEREDOC
 # -----------------------------------------------------------------------------
 cleanup_project() {
     print_step "Cleaning up..."
-    # cd "$PROJECT_DIR"
-    # # Remove .git and reinitialize
-    # rm -rf .git
-    # git init
-    # # Remove this setup script
-    # rm -f "$PROJECT_DIR/scripts/setup.sh"
-    # # Remove scripts/ if empty
-    # rmdir "$PROJECT_DIR/scripts" 2>/dev/null || true
-    # # Remove start:template script from package.json if it exists
-    # if grep -q '"start:template"' "$PROJECT_DIR/package.json" 2>/dev/null; then
-    #     sed -i '' '/"start:template"/d' "$PROJECT_DIR/package.json"
-    # fi
-    # # Initial commit
-    # git add -A
-    # git commit -m "chore: initial project setup"
+    cd "$PROJECT_DIR"
+    # Remove .git and reinitialize
+    rm -rf .git
+    git init
+    # Remove this setup script
+    rm -f "$PROJECT_DIR/scripts/setup.sh"
+    # Remove scripts/ if empty
+    rmdir "$PROJECT_DIR/scripts" 2>/dev/null || true
+    # Remove start:template script from package.json if it exists
+    if grep -q '"start:template"' "$PROJECT_DIR/package.json" 2>/dev/null; then
+        sed -i '' '/"start:template"/d' "$PROJECT_DIR/package.json"
+    fi
+    # Initial commit
+    git add -A
+    git commit -m "chore: initial project setup"
     print_success "Git history cleaned. Initial commit created."
 }
 # -----------------------------------------------------------------------------
