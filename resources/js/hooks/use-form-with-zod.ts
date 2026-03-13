@@ -2,7 +2,7 @@ import { useForm, type InertiaFormProps } from '@inertiajs/react';
 import type { ZodType, ZodError } from 'zod';
 import { useCallback } from 'react';
 
-type FormValues = Record<string, string | number | boolean | null | undefined>;
+type FormValues = Record<string, string | number | boolean | null | undefined | Array<string | number | boolean>>;
 
 interface UseFormWithZodReturn<T extends FormValues> extends InertiaFormProps<T> {
     validate: () => boolean;

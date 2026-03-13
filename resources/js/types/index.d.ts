@@ -28,6 +28,10 @@ export interface SharedData {
     app: {
         name: string;
     };
+    auth?: {
+        user: AuthUser | null;
+    };
+    menus?: MenuItem[];
     flash: {
         success?: string;
         error?: string;
@@ -47,3 +51,35 @@ export interface IPageProps {
 export type IPaginatedPageProps<T> = IPageProps & {
     page: IPaginate<T>;
 };
+
+export interface AuthUser {
+    id: number;
+    name: string;
+    email: string;
+    document?: string | null;
+    role?: string | null;
+    profile_id?: number | null;
+}
+
+export interface MenuItem {
+    id: number;
+    name: string;
+    slug: string;
+    path: string;
+    icon?: string | null;
+    item_order?: number;
+}
+
+export interface Module extends IBaseModel {
+    name: string;
+    slug: string;
+    path: string;
+    icon?: string | null;
+    item_order: number;
+}
+
+export interface Profile extends IBaseModel {
+    name: string;
+    modules?: Module[];
+    modules_count?: number;
+}
