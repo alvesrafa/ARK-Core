@@ -1,5 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LayoutDashboard } from 'lucide-react';
 import AppLayout from './layouts/AppLayout';
 
 export default function Dashboard() {
@@ -11,17 +9,7 @@ export default function Dashboard() {
                     <p className="text-gray-500">Bem-vindo ao asdasdasRK asdasdCore.</p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Template</CardTitle>
-                            <LayoutDashboard className="h-4 w-4 text-gray-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <CardDescription>Este é o template padrãoasdasdase.</CardDescription>
-                        </CardContent>
-                    </Card>
-                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
             </div>
         </AppLayout>
     );

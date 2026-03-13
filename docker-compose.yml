@@ -13,7 +13,7 @@ services:
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
         volumes:
             - .:/app
-            # - storage-volume:/app/storage/app  # Uncomment for NFS/external volume
+            # - storage-volume:${VOLUME_STORAGE_PATH:-/app/storage/app/files} # Managed by setup.sh when FILESYSTEM_DISK=volume
         depends_on:
             mysql:
                 condition: service_healthy
@@ -56,13 +56,13 @@ services:
 volumes:
     sail-mysql:
     sail-redis:
-    # NFS volume example — uncomment and configure for production:
-    # storage-volume:
-    #     driver: local
-    #     driver_opts:
-    #         type: nfs
-    #         o: addr=${NFS_SERVER_ADDR},nolock,soft,rw
-    #         device: ':${NFS_SERVER_PATH}'
+    storage-volume:
+        # For NFS, replace this block with:
+        # driver: local
+        # driver_opts:
+        #     type: nfs
+        #     o: addr=${NFS_SERVER_ADDR},nolock,soft,rw
+        #     device: ':${NFS_SERVER_PATH}'
 
 networks:
     sail:

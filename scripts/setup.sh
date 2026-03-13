@@ -278,7 +278,30 @@ update_docker_compose() {
         # Remove sail-redis from volumes
         sed -i '' '/^    sail-redis:/d' "$dc"
     fi
+    if [ "$FILESYSTEM_DISK" = "volume" ]; then
+        sed -i '' 's|^            # - storage-volume:|            - storage-volume:|' "$dc"
+    else
+        sed -i '' 's|^            - storage-volume:|            # - storage-volume:|' "$dc"
+    fi
     print_success "docker-compose.yml updated."
+}
+update_dockerfile() {
+    print_step "Updating docker/Dockerfile..."
+    local dockerfile="$PROJECT_DIR/docker/Dockerfile"
+    if [ "$FILESYSTEM_DISK" = "volume" ]; then
+        local volume_path_escaped
+        volume_path_escaped=$(printf '%s' "$VOLUME_STORAGE_PATH" | sed 's/[&|]/\\&/g')
+        if grep -q '^# VOLUME ' "$dockerfile"; then
+            sed -i '' "s|^# VOLUME .*|VOLUME $volume_path_escaped|" "$dockerfile"
+        elif grep -q '^VOLUME ' "$dockerfile"; then
+            sed -i '' "s|^VOLUME .*|VOLUME $volume_path_escaped|" "$dockerfile"
+        fi
+    else
+        if grep -q '^VOLUME ' "$dockerfile"; then
+            sed -i '' "s|^VOLUME |# VOLUME |" "$dockerfile"
+        fi
+    fi
+    print_success "docker/Dockerfile updated."
 }
 generate_readme() {
     print_step "Generating README.md..."
@@ -446,21 +469,21 @@ HEREDOC
 # -----------------------------------------------------------------------------
 cleanup_project() {
     print_step "Cleaning up..."
-    cd "$PROJECT_DIR"
-    # Remove .git and reinitialize
-    rm -rf .git
-    git init
-    # Remove this setup script
-    rm -f "$PROJECT_DIR/scripts/setup.sh"
-    # Remove scripts/ if empty
-    rmdir "$PROJECT_DIR/scripts" 2>/dev/null || true
-    # Remove start:template script from package.json if it exists
-    if grep -q '"start:template"' "$PROJECT_DIR/package.json" 2>/dev/null; then
-        sed -i '' '/"start:template"/d' "$PROJECT_DIR/package.json"
-    fi
-    # Initial commit
-    git add -A
-    git commit -m "chore: initial project setup"
+    # cd "$PROJECT_DIR"
+    # # Remove .git and reinitialize
+    # rm -rf .git
+    # git init
+    # # Remove this setup script
+    # rm -f "$PROJECT_DIR/scripts/setup.sh"
+    # # Remove scripts/ if empty
+    # rmdir "$PROJECT_DIR/scripts" 2>/dev/null || true
+    # # Remove start:template script from package.json if it exists
+    # if grep -q '"start:template"' "$PROJECT_DIR/package.json" 2>/dev/null; then
+    #     sed -i '' '/"start:template"/d' "$PROJECT_DIR/package.json"
+    # fi
+    # # Initial commit
+    # git add -A
+    # git commit -m "chore: initial project setup"
     print_success "Git history cleaned. Initial commit created."
 }
 # -----------------------------------------------------------------------------
@@ -510,6 +533,7 @@ main() {
     # Apply transformations
     generate_env
     update_docker_compose
+    update_dockerfile
     generate_readme
     update_claude_md
     update_agents_md

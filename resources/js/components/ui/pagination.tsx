@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
+import type { IPaginate } from '@/types';
 import { Link } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { IPaginate } from '@/types';
 
 interface PaginationProps<T> {
     paginator: IPaginate<T>;
@@ -23,8 +23,9 @@ export function Pagination<T>({ paginator, className }: PaginationProps<T>) {
                             <span
                                 key={index}
                                 className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm text-gray-400"
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
+                            >
+                                {link.label}
+                            </span>
                         );
                     }
 
@@ -44,7 +45,7 @@ export function Pagination<T>({ paginator, className }: PaginationProps<T>) {
                             ) : link.label === 'Next &raquo;' ? (
                                 <ChevronRight className="h-4 w-4" />
                             ) : (
-                                <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                <span>{link.label}</span>
                             )}
                         </Link>
                     );

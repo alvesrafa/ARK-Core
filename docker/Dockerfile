@@ -15,6 +15,7 @@ RUN install-php-extensions \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
+# VOLUME /app/storage/app/files
 
 # ==============================================================================
 # Frontend assets build
