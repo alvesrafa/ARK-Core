@@ -5,6 +5,7 @@ set -euo pipefail
 # =============================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+CHECKPOINT_FILE="$PROJECT_DIR/.setup-checkpoint"
 # -----------------------------------------------------------------------------
 # 1. Header & Utilities
 # -----------------------------------------------------------------------------
@@ -23,6 +24,9 @@ cleanup() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         print_error "Setup failed (exit code $exit_code). Check the output above for details."
+        if [ -f "$CHECKPOINT_FILE" ]; then
+            print_warning "Checkpoint saved. Re-run ./scripts/setup.sh to continue from where it left off."
+        fi
     fi
 }
 trap cleanup EXIT
@@ -97,6 +101,27 @@ slugify() {
 generate_password() {
     openssl rand -base64 24 | tr -d '/+=' | head -c 16
 }
+# -----------------------------------------------------------------------------
+# Checkpoint system
+# -----------------------------------------------------------------------------
+save_checkpoint() {
+    declare -p PROJECT_NAME PROJECT_SLUG PROJECT_DESCRIPTION \
+        DB_DATABASE DB_PASSWORD USE_REDIS APP_PORT FILESYSTEM_DISK \
+        AZURE_STORAGE_CONNECTION_STRING AZURE_STORAGE_CONTAINER AZURE_STORAGE_URL \
+        AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_BUCKET AWS_DEFAULT_REGION \
+        VOLUME_STORAGE_PATH USE_BOOST COMPLETED_STEPS > "$CHECKPOINT_FILE" 2>/dev/null || true
+}
+load_checkpoint() {
+    # shellcheck source=/dev/null
+    source "$CHECKPOINT_FILE"
+}
+mark_step_done() {
+    COMPLETED_STEPS="${COMPLETED_STEPS} $1"
+    save_checkpoint
+}
+is_step_done() {
+    [[ " ${COMPLETED_STEPS} " == *" $1 "* ]]
+}
 check_prerequisites() {
     print_step "Checking prerequisites..."
     if ! command -v docker &>/dev/null; then
@@ -167,6 +192,15 @@ collect_info() {
     echo ""
     USE_BOOST=$(prompt_yesno "Install Laravel Boost MCP?" "y")
     # --- Summary ---
+    print_summary_collected
+    local confirm
+    confirm=$(prompt_yesno "Proceed with setup?" "y")
+    if [ "$confirm" != "yes" ]; then
+        echo "Setup cancelled."
+        exit 0
+    fi
+}
+print_summary_collected() {
     echo ""
     echo "${BOLD}${CYAN}═══════════════════════════════════════════${RESET}"
     echo "${BOLD}  Summary${RESET}"
@@ -180,12 +214,6 @@ collect_info() {
     echo "  Boost MCP:    $USE_BOOST"
     echo "${BOLD}${CYAN}═══════════════════════════════════════════${RESET}"
     echo ""
-    local confirm
-    confirm=$(prompt_yesno "Proceed with setup?" "y")
-    if [ "$confirm" != "yes" ]; then
-        echo "Setup cancelled."
-        exit 0
-    fi
 }
 # -----------------------------------------------------------------------------
 # 3. Transformations
@@ -329,25 +357,30 @@ If you haven't run the setup script yet:
 \`\`\`
 ### Development
 \`\`\`bash
-# Start containers
-docker compose up -d
-# Run dev server (Vite + Octane)
-docker compose exec app composer dev
+# Start containers + frontend dev server (recommended)
+./vendor/bin/sail up -d && ./vendor/bin/sail npm run dev
+
+# Or step by step:
+./vendor/bin/sail up -d          # Start all containers in background
+./vendor/bin/sail npm run dev    # Vite HMR (keep terminal open)
+
 # Run tests
-docker compose exec app composer test    # Backend (Pest)
-docker compose exec app npm run test      # Frontend (Vitest)
+./vendor/bin/sail composer test  # Backend (Pest)
+./vendor/bin/sail npm run test   # Frontend (Vitest)
+
 # Lint & format
-docker compose exec app vendor/bin/pint  # PHP formatting
-docker compose exec app npx eslint .     # JS linting
-docker compose exec app npm run types    # TypeScript check
+./vendor/bin/sail vendor/bin/pint  # PHP formatting
+./vendor/bin/sail npx eslint .     # JS linting
+./vendor/bin/sail npm run types    # TypeScript check
 \`\`\`
 ### Useful Commands
 \`\`\`bash
 # Artisan
-docker compose exec app php artisan migrate
-docker compose exec app php artisan tinker
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan tinker
+
 # Logs
-docker compose logs -f app
+./vendor/bin/sail logs -f
 \`\`\`
 ## Architecture
 See [CLAUDE.md](CLAUDE.md) for architecture details and coding conventions.
@@ -368,7 +401,6 @@ update_claude_md() {
 update_agents_md() {
     print_step "Updating AGENTS.md..."
     local agents="$PROJECT_DIR/AGENTS.md"
-    # Prepend project context section
     local temp_file
     temp_file=$(mktemp)
     cat > "$temp_file" << HEREDOC
@@ -379,6 +411,42 @@ update_agents_md() {
 - **Redis:** $USE_REDIS
 ---
 HEREDOC
+
+    if [ "$USE_REDIS" = "yes" ]; then
+        cat >> "$temp_file" << 'HEREDOC'
+## Cache Redis — Padrão para Listagens
+
+Toda requisição GET de listagem padrão (action `index`) **deve usar cache Redis por padrão**. Aplique no Repository ou Service:
+
+```php
+// Exemplo no Repository
+public function paginate(int $page = 1, string $search = ''): LengthAwarePaginator
+{
+    $key = "users.index.page_{$page}.search_" . md5($search);
+
+    return Cache::remember($key, now()->addSeconds(60), fn () =>
+        User::query()
+            ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->paginate(15, page: $page)
+    );
+}
+```
+
+**Regras:**
+- Chave de cache deve incluir todos os parâmetros dinâmicos (página, filtros, busca, ordenação)
+- TTL padrão: **60 segundos** — ajuste por domínio conforme criticidade
+- Invalide o cache nos métodos `store()`, `update()` e `destroy()` do Service:
+  ```php
+  Cache::tags(['users'])->flush(); // requer Redis com suporte a tags
+  // ou Cache::forget($key) para chaves específicas
+  ```
+- Prefira `Cache::tags(['dominio'])` para facilitar invalidação em massa
+- Não aplique cache em listagens com dados sensíveis ou de tempo real
+
+---
+HEREDOC
+    fi
+
     cat "$agents" >> "$temp_file"
     mv "$temp_file" "$agents"
     print_success "AGENTS.md updated."
@@ -477,6 +545,8 @@ cleanup_project() {
     rm -f "$PROJECT_DIR/scripts/setup.sh"
     # Remove scripts/ if empty
     rmdir "$PROJECT_DIR/scripts" 2>/dev/null || true
+    # Remove checkpoint file — setup completed successfully
+    rm -f "$CHECKPOINT_FILE"
     # Remove start:template script from package.json if it exists
     if grep -q '"start:template"' "$PROJECT_DIR/package.json" 2>/dev/null; then
         sed -i '' '/"start:template"/d' "$PROJECT_DIR/package.json"
@@ -510,7 +580,7 @@ print_summary() {
     echo "  ${BOLD}Boost MCP:${RESET}      $boost_status"
     echo ""
     echo "  ${BOLD}Start dev server:${RESET}"
-    echo "    docker compose exec app composer dev"
+    echo "    ./vendor/bin/sail up -d && ./vendor/bin/sail npm run dev"
     echo ""
     echo "  ${BOLD}Next steps:${RESET}"
     echo "    1. Open http://localhost:${APP_PORT} in your browser"
@@ -525,29 +595,67 @@ print_summary() {
 # -----------------------------------------------------------------------------
 main() {
     cd "$PROJECT_DIR"
+
+    # Initialize all config variables (required before first save_checkpoint call)
+    PROJECT_NAME="" PROJECT_SLUG="" PROJECT_DESCRIPTION=""
+    DB_DATABASE="" DB_PASSWORD="" USE_REDIS=""
+    APP_PORT="" FILESYSTEM_DISK=""
+    AZURE_STORAGE_CONNECTION_STRING="" AZURE_STORAGE_CONTAINER="" AZURE_STORAGE_URL=""
+    AWS_ACCESS_KEY_ID="" AWS_SECRET_ACCESS_KEY="" AWS_BUCKET="" AWS_DEFAULT_REGION=""
+    VOLUME_STORAGE_PATH="" USE_BOOST=""
+    COMPLETED_STEPS=""
+
     print_header
+
+    # Check for existing checkpoint and offer to resume
+    if [ -f "$CHECKPOINT_FILE" ]; then
+        print_warning "Found an existing setup checkpoint."
+        local resume
+        resume=$(prompt_yesno "Resume from where it left off?" "y")
+        if [ "$resume" = "yes" ]; then
+            load_checkpoint
+            print_success "Checkpoint loaded. Resuming setup..."
+            echo ""
+            print_summary_collected
+        else
+            rm -f "$CHECKPOINT_FILE"
+            COMPLETED_STEPS=""
+        fi
+    fi
+
     check_prerequisites
     echo ""
-    collect_info
+
+    # Collect project information (skipped when resuming)
+    if ! is_step_done "collect_info"; then
+        collect_info
+        mark_step_done "collect_info"
+    fi
     echo ""
-    # Apply transformations
-    generate_env
-    update_docker_compose
-    update_dockerfile
-    generate_readme
-    update_claude_md
-    update_agents_md
+
+    # Apply transformations (each step is idempotent — safe to re-run)
+    is_step_done "generate_env"           || { generate_env;           mark_step_done "generate_env"; }
+    is_step_done "update_docker_compose"  || { update_docker_compose;  mark_step_done "update_docker_compose"; }
+    is_step_done "update_dockerfile"      || { update_dockerfile;      mark_step_done "update_dockerfile"; }
+    is_step_done "generate_readme"        || { generate_readme;        mark_step_done "generate_readme"; }
+    is_step_done "update_claude_md"       || { update_claude_md;       mark_step_done "update_claude_md"; }
+    is_step_done "update_agents_md"       || { update_agents_md;       mark_step_done "update_agents_md"; }
     echo ""
-    # Dependencies before Docker actions
-    run_composer_install
-    # Docker setup
-    run_docker_setup
-    # Boost MCP
-    install_boost
+
+    # Install PHP dependencies
+    is_step_done "run_composer_install" || { run_composer_install; mark_step_done "run_composer_install"; }
+
+    # Build images, start containers, run migrations, build frontend
+    is_step_done "run_docker_setup" || { run_docker_setup; mark_step_done "run_docker_setup"; }
+
+    # Optional: Laravel Boost MCP
+    is_step_done "install_boost" || { install_boost; mark_step_done "install_boost"; }
     echo ""
-    # Cleanup
+
+    # Cleanup (removes checkpoint on success)
     cleanup_project
-    # Summary
+
+    # Final summary
     print_summary
 }
 main "$@"
