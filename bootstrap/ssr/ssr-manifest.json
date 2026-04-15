@@ -1,8 +1,20 @@
 {
-  "resources/js/components/ui/card.tsx": [],
+  "resources/js/components/ui/button.tsx": [],
+  "resources/js/components/ui/input.tsx": [],
+  "resources/js/components/ui/label.tsx": [],
+  "resources/js/components/ui/table.tsx": [],
   "resources/js/contexts/ToastProvider.tsx": [],
+  "resources/js/forms/profiles/profiles-form.tsx": [],
+  "resources/js/forms/profiles/schema.ts": [],
+  "resources/js/forms/profiles/use-profiles-form.ts": [],
+  "resources/js/hooks/use-form-with-zod.ts": [],
   "resources/js/lib/utils.ts": [],
   "resources/js/pages/dashboard.tsx": [],
   "resources/js/pages/layouts/AppLayout.tsx": [],
+  "resources/js/pages/profiles/create.tsx": [],
+  "resources/js/pages/profiles/edit.tsx": [],
+  "resources/js/pages/profiles/index.tsx": [],
+  "resources/js/partials/profiles/profile-form-screen.tsx": [],
+  "resources/js/partials/profiles/profiles-list.tsx": [],
   "resources/js/ssr.tsx": []
 }

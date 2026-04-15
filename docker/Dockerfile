@@ -29,11 +29,11 @@ COPY . .
 RUN npm run build
 
 # ==============================================================================
-# Development stage — used by Sail
+# Development stage
 # ==============================================================================
 FROM base AS dev
 
-# Copy Node.js 22 from official image so sail npm / npx commands work
+# Copy Node.js 22 from official image
 COPY --from=node:22-slim /usr/local/bin/node /usr/local/bin/node
 COPY --from=node:22-slim /usr/local/include/node /usr/local/include/node
 COPY --from=node:22-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
@@ -42,8 +42,19 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 
 RUN install-php-extensions xdebug
 
+# Install frontend dependencies with Linux-native binaries.
+# Must happen before COPY . . so the named volume (node_modules:/app/node_modules)
+# is seeded with the correct platform binaries on first container start.
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
+
+# Install PHP dependencies
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-scripts
+
+# Copy remaining source (node_modules and vendor are excluded via .dockerignore)
 COPY . .
-RUN composer install --no-interaction
+RUN composer run-script post-autoload-dump 2>/dev/null || true
 
 EXPOSE 80 443
 

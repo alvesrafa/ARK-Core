@@ -372,31 +372,43 @@ If you haven't run the setup script yet:
 \`\`\`
 ### Development
 \`\`\`bash
-# Start containers + frontend dev server (recommended)
-./vendor/bin/sail up -d && ./vendor/bin/sail npm run dev
+# Terminal 1 — start all containers
+docker compose up
 
-# Or step by step:
-./vendor/bin/sail up -d          # Start all containers in background
-./vendor/bin/sail npm run dev    # Vite HMR (keep terminal open)
+# Terminal 2 — Vite HMR dev server (keep open while coding)
+docker compose exec app npm run dev
+\`\`\`
 
-# Run tests
-./vendor/bin/sail composer test  # Backend (Pest)
-./vendor/bin/sail npm run test   # Frontend (Vitest)
+The app is served by FrankenPHP on port **$APP_PORT**. Vite runs on port **5173** for Hot Module Replacement.
+
+### Running Commands Inside the Container
+All PHP/npm commands run inside the container to ensure correct platform binaries:
+\`\`\`bash
+# Artisan
+docker compose exec app php artisan migrate
+docker compose exec app php artisan tinker
+
+# Tests
+docker compose exec app php artisan test       # Backend (Pest)
+docker compose exec app npm run test           # Frontend (Vitest)
 
 # Lint & format
-./vendor/bin/sail vendor/bin/pint  # PHP formatting
-./vendor/bin/sail npx eslint .     # JS linting
-./vendor/bin/sail npm run types    # TypeScript check
+docker compose exec app vendor/bin/pint        # PHP formatting
+docker compose exec app npx eslint . --fix     # JS linting
+docker compose exec app npm run types          # TypeScript check
 \`\`\`
 ### Useful Commands
 \`\`\`bash
-# Artisan
-./vendor/bin/sail artisan migrate
-./vendor/bin/sail artisan tinker
+# View logs
+docker compose logs -f app
 
-# Logs
-./vendor/bin/sail logs -f
+# Rebuild after Dockerfile changes
+docker compose up -d --build
 \`\`\`
+
+### Default Dev Credentials
+- Email: \`admin@ark.local\`
+- Password: \`password\`
 ## Architecture
 See [CLAUDE.md](CLAUDE.md) for architecture details and coding conventions.
 HEREDOC
@@ -470,15 +482,20 @@ HEREDOC
 # 4. Execution
 # -----------------------------------------------------------------------------
 run_composer_install() {
-    print_step "Installing PHP dependencies..."
+    # Composer install runs inside the container during `docker compose up --build`.
+    # Running it on the host is only needed for the initial `vendor/bin` availability
+    # before Docker is up. We skip it here; the image handles it.
+    print_step "Checking local Composer install for vendor/bin..."
     cd "$PROJECT_DIR"
-    if command -v composer &>/dev/null; then
-        composer install --no-interaction --prefer-dist
+    if [ ! -d "$PROJECT_DIR/vendor" ]; then
+        if command -v composer &>/dev/null; then
+            composer install --no-interaction --prefer-dist
+        else
+            print_warning "Composer not found locally. vendor/ will be installed inside the container."
+        fi
     else
-        print_error "Composer not found locally. Please install Composer first."
-        exit 1
+        print_success "vendor/ already present, skipping host composer install."
     fi
-    print_success "PHP dependencies installed."
 }
 run_docker_setup() {
     print_step "Building and starting containers..."
@@ -519,14 +536,10 @@ run_docker_setup() {
     print_step "Running artisan commands..."
     docker compose exec app php artisan key:generate
     docker compose exec app php artisan migrate --force
+    docker compose exec app php artisan db:seed --force
     docker compose exec app php artisan storage:link || true
-    print_step "Installing frontend dependencies..."
-    if [ -d "$PROJECT_DIR/node_modules" ] && [ -f "$PROJECT_DIR/node_modules/.package-lock.json" ]; then
-        print_success "node_modules already exists, skipping npm install."
-    else
-        npm install --legacy-peer-deps
-    fi
-    npm run build
+    print_step "Building frontend assets inside container..."
+    docker compose exec app npm run build
     print_success "Docker setup complete."
 }
 install_boost() {
@@ -595,7 +608,8 @@ print_summary() {
     echo "  ${BOLD}Boost MCP:${RESET}      $boost_status"
     echo ""
     echo "  ${BOLD}Start dev server:${RESET}"
-    echo "    ./vendor/bin/sail up -d && ./vendor/bin/sail npm run dev"
+    echo "    docker compose up -d"
+    echo "    docker compose exec app npm run dev   # keep open for HMR"
     echo ""
     echo "  ${BOLD}Next steps:${RESET}"
     echo "    1. Open http://localhost:${APP_PORT} in your browser"

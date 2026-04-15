@@ -13,6 +13,9 @@ services:
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
         volumes:
             - .:/app
+            # Keep node_modules in a named volume so Linux-native binaries (installed
+            # during image build) are never overridden by the macOS host directory.
+            - node_modules:/app/node_modules
             # - storage-volume:${VOLUME_STORAGE_PATH:-/app/storage/app/files} # Managed by setup.sh when FILESYSTEM_DISK=volume
         depends_on:
             mysql:
@@ -56,6 +59,7 @@ services:
 volumes:
     sail-mysql:
     sail-redis:
+    node_modules:
     storage-volume:
         # For NFS, replace this block with:
         # driver: local
