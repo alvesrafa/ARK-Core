@@ -43,8 +43,7 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 RUN install-php-extensions xdebug
 
 COPY . .
-RUN composer install --no-interaction \
-    && npm install
+RUN composer install --no-interaction
 
 EXPOSE 80 443
 

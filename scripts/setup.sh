@@ -105,11 +105,26 @@ generate_password() {
 # Checkpoint system
 # -----------------------------------------------------------------------------
 save_checkpoint() {
-    declare -p PROJECT_NAME PROJECT_SLUG PROJECT_DESCRIPTION \
-        DB_DATABASE DB_PASSWORD USE_REDIS APP_PORT FILESYSTEM_DISK \
-        AZURE_STORAGE_CONNECTION_STRING AZURE_STORAGE_CONTAINER AZURE_STORAGE_URL \
-        AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_BUCKET AWS_DEFAULT_REGION \
-        VOLUME_STORAGE_PATH USE_BOOST COMPLETED_STEPS > "$CHECKPOINT_FILE" 2>/dev/null || true
+    {
+        printf 'PROJECT_NAME=%q\n'                    "${PROJECT_NAME:-}"
+        printf 'PROJECT_SLUG=%q\n'                    "${PROJECT_SLUG:-}"
+        printf 'PROJECT_DESCRIPTION=%q\n'             "${PROJECT_DESCRIPTION:-}"
+        printf 'DB_DATABASE=%q\n'                     "${DB_DATABASE:-}"
+        printf 'DB_PASSWORD=%q\n'                     "${DB_PASSWORD:-}"
+        printf 'USE_REDIS=%q\n'                       "${USE_REDIS:-}"
+        printf 'APP_PORT=%q\n'                        "${APP_PORT:-}"
+        printf 'FILESYSTEM_DISK=%q\n'                 "${FILESYSTEM_DISK:-}"
+        printf 'AZURE_STORAGE_CONNECTION_STRING=%q\n' "${AZURE_STORAGE_CONNECTION_STRING:-}"
+        printf 'AZURE_STORAGE_CONTAINER=%q\n'         "${AZURE_STORAGE_CONTAINER:-}"
+        printf 'AZURE_STORAGE_URL=%q\n'               "${AZURE_STORAGE_URL:-}"
+        printf 'AWS_ACCESS_KEY_ID=%q\n'               "${AWS_ACCESS_KEY_ID:-}"
+        printf 'AWS_SECRET_ACCESS_KEY=%q\n'           "${AWS_SECRET_ACCESS_KEY:-}"
+        printf 'AWS_BUCKET=%q\n'                      "${AWS_BUCKET:-}"
+        printf 'AWS_DEFAULT_REGION=%q\n'              "${AWS_DEFAULT_REGION:-}"
+        printf 'VOLUME_STORAGE_PATH=%q\n'             "${VOLUME_STORAGE_PATH:-}"
+        printf 'USE_BOOST=%q\n'                       "${USE_BOOST:-}"
+        printf 'COMPLETED_STEPS=%q\n'                 "${COMPLETED_STEPS:-}"
+    } > "$CHECKPOINT_FILE"
 }
 load_checkpoint() {
     # shellcheck source=/dev/null
